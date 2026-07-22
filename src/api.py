@@ -1,8 +1,10 @@
 import json
+import os
 import httpx
 from config import settings
 
 BASE = "https://api.openchargemap.io/v3/poi"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def fetch_stations(max_results: int = 5, offset: int = 0) -> list[dict]:
     resp = httpx.get(
@@ -38,6 +40,17 @@ def print_records(stations: list[dict]) -> None:
         print(json.dumps(record, indent=2))
 
 
+def save_records(stations: list[dict], path: str | None = None) -> None:
+    if path is None:
+        path = os.path.join(PROJECT_ROOT, "result-set", "stations.txt")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        for record in stations:
+            f.write(json.dumps(record, indent=2))
+            f.write("\n")
+
+
 if __name__ == "__main__":
     result = fetch_stations(max_results=100, offset=0)
-    print_records(result)
+    #print_records(result)
+    save_records(result)
