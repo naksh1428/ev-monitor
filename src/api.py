@@ -19,6 +19,9 @@ def fetch_stations(max_results: int = 5, offset: int = 0) -> list[dict]:
         timeout=30.0,
     )
     resp.raise_for_status()
+    with open ("api_result.txt","w", encoding="utf-8") as f:
+        f.write(resp.text)
+    print(resp.json())
     return resp.json()
 
 def print_stations(stations: list[dict]) -> None:
@@ -51,6 +54,9 @@ def save_records(stations: list[dict], path: str | None = None) -> None:
 
 
 if __name__ == "__main__":
-    result = fetch_stations(max_results=100, offset=0)
+    result = fetch_stations(max_results=1000, offset=0)
+    print(f"Found {len(result)} charging stations\n")
+    print(type(result))
+    #print(f"Keys: {result.__dict__.keys()}\n")
     #print_records(result)
     save_records(result)
