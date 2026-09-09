@@ -1,0 +1,15 @@
+.venv
+__pycache__
+**/__pycache__
+*.pyc
+.git
+.idea
+.env
+result-set
+research_data
+*.odt
+*.pdf
+stations.txt
+api_result.txt
+tests
+uv.lock
