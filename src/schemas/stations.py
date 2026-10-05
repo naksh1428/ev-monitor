@@ -74,3 +74,55 @@ class IngestTaskStatus(BaseModel):
     status: str
     result: Optional[IngestSummary] = None
     error: Optional[str] = None
+
+
+# --- Read/browse schemas -----------------------------------------------
+
+class StationListItem(BaseModel):
+    id: int
+    uuid: str | None
+    title: str | None  # from addresses.title
+    town: str | None
+    postcode: str | None
+    operator_id: int | None
+    operator_title: str | None
+    status_type_id: int | None
+    status_title: str | None
+    number_of_points: int | None
+
+
+class StationLocationOut(BaseModel):
+    station_id: int
+    town: str | None
+    postcode: str | None
+
+
+class StationConnectionItem(BaseModel):
+    connection_id: int
+    station_id: int
+    connection_type_id: int | None
+    power_kw: float | None
+    amps: int | None
+    voltage: int | None
+    quantity: int | None
+    status_type_id: int | None
+    status_title: str | None
+    is_working: bool | None  # None = genuinely unclear (e.g. "Unknown"/"Planned For Future Date")
+
+
+class StationDownConnectionOut(BaseModel):
+    connection_id: int
+    status_type_id: int | None
+    status_title: str | None
+    town: str | None
+    postcode: str | None
+
+
+class StationWorkingStatusOut(BaseModel):
+    station_id: int
+    title: str | None
+    town: str | None
+    postcode: str | None
+    status_type_id: int | None
+    status_title: str | None  # e.g. "Operational", "Not Operational", "Unknown"
+    is_operational: bool | None  # None = unclear (e.g. "Unknown"/"Planned For Future Date")

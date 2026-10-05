@@ -7,7 +7,10 @@ services:
       MYSQL_DATABASE: ev_station_db
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./src/ev_station_db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      # Schema creation now belongs to Alembic (see `api`'s command below),
+      # not this init script - keeping both would make a fresh volume run
+      # CREATE TABLE twice and fail. src/ev_station_db.sql and
+      # src/migrations/*.sql are kept only as a historical record.
     ports:
       - "3307:3306"  # host 3306 is already taken by a native mysqld; use 3307 for GUI clients
     healthcheck:
@@ -28,6 +31,10 @@ services:
   api:
     build: .
     restart: unless-stopped
+    # Applies pending Alembic migrations before every start, then serves the
+    # app. Runs from this one service only, so migrations aren't raced by
+    # worker/beat starting in parallel against the same database.
+    command: ["sh", "-c", "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000"]
     env_file:
       - .env
     environment:

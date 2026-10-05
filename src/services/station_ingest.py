@@ -24,7 +24,7 @@ KNOWN_STATUS_TYPES: dict[int, tuple[str, bool | None]] = {
 
 
 def _to_naive_utc(value: datetime | None) -> datetime | None:
-    """MySQL DATETIME columns here are naive; normalize any tz-aware value to naive UTC."""
+    """Convert a datetime to naive UTC."""
     if value is None:
         return None
     if value.tzinfo is not None:
@@ -33,7 +33,7 @@ def _to_naive_utc(value: datetime | None) -> datetime | None:
 
 
 def seed_status_types(db: Session) -> None:
-    """Upsert the static OCM status-type lookup rows."""
+    """Seed the fixed list of status types."""
     for status_id, (title, is_operational) in KNOWN_STATUS_TYPES.items():
         status_type = db.get(StatusType, status_id)
         if status_type is None:
@@ -45,7 +45,7 @@ def seed_status_types(db: Session) -> None:
 
 
 def _ensure_status_type(db: Session, status_type_id: int | None) -> None:
-    """Insert a placeholder row for a status code outside KNOWN_STATUS_TYPES so the FK never breaks."""
+    """Add a placeholder for an unknown status code."""
     if status_type_id is None or status_type_id in KNOWN_STATUS_TYPES:
         return
     if db.get(StatusType, status_type_id) is None:
@@ -53,7 +53,7 @@ def _ensure_status_type(db: Session, status_type_id: int | None) -> None:
 
 
 def _upsert_operator(db: Session, operator_id: int | None) -> None:
-    """Ensure the operator row exists. OCM's compact=true payload carries no operator title/website."""
+    """Create the operator if it doesn't exist yet."""
     if operator_id is None:
         return
     if db.get(Operator, operator_id) is None:
@@ -81,7 +81,7 @@ def _upsert_address(db: Session, address: AddressInfoIn) -> None:
 
 
 def _upsert_station(db: Session, station: StationIn) -> bool:
-    """Upsert the station row. Returns True if this was a fresh insert (vs an update)."""
+    """Insert or update a station; return True if new."""
     fields = dict(
         uuid=station.uuid,
         operator_id=station.operator_id,
@@ -125,7 +125,7 @@ def _upsert_connections(db: Session, station_id: int, connections: list) -> int:
 
 
 def _add_status_snapshot(db: Session, station: StationIn) -> None:
-    """Append-only history row; never updated."""
+    """Append a status history record for a station."""
     db.add(
         StatusSnapshot(
             station_id=station.id,
@@ -137,12 +137,7 @@ def _add_status_snapshot(db: Session, station: StationIn) -> None:
 
 
 def ingest_stations(db: Session, raw_records: list[dict]) -> IngestSummary:
-    """Validate and persist a batch of raw OCM station records.
-
-    Each station's writes (address, operator, station, connections, snapshot)
-    commit or roll back together. A record that fails validation or a DB write
-    is skipped and logged; it does not abort the rest of the batch.
-    """
+    """Save a batch of OCM stations, skipping any that fail."""
     seed_status_types(db)
 
     processed = inserted = updated = connections_written = snapshots_added = skipped = 0

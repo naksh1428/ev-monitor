@@ -15,7 +15,7 @@ async def list_towns(
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
 ) -> list[str]:
-    """Get the list of towns that have stations, with no duplicates, sorted A to Z."""
+    """List unique towns that have stations, sorted."""
     stmt = (
         select(Address.town)
         .where(Address.town.is_not(None), Address.town != "")
@@ -30,6 +30,6 @@ async def list_towns(
 
 @router.get("/status-types", response_model=list[StatusTypeOut])
 async def list_status_types(db: AsyncSession = Depends(get_db)) -> list[StatusTypeOut]:
-    """Get the full list of possible statuses, so a filter dropdown can be built from it."""
+    """List all possible statuses."""
     result = await db.execute(select(StatusType).order_by(StatusType.id))
     return result.scalars().all()

@@ -13,11 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def snapshot_connection_status(db: Session, snapshot_date: date | None = None) -> int:
-    """Write one connection_status_daily row per connection for `snapshot_date` (default: today, UTC).
-
-    Idempotent: rerunning for a date that already has rows updates them in place
-    rather than duplicating, relying on the (snapshot_date, connection_id) unique key.
-    """
+    """Save today's status for every connector."""
     if snapshot_date is None:
         snapshot_date = datetime.now(timezone.utc).date()
 
@@ -60,7 +56,7 @@ def snapshot_connection_status(db: Session, snapshot_date: date | None = None) -
 
 @celery_app.task(name="connections.snapshot_daily")
 def snapshot_connection_status_task() -> int:
-    """Celery beat task: snapshot today's working/not-working state for every connection."""
+    """Scheduled job to record today's connector status."""
     db = LocalSession()
     try:
         count = snapshot_connection_status(db)
@@ -71,11 +67,7 @@ def snapshot_connection_status_task() -> int:
 
 
 async def latest_reading_per_connection(db: AsyncSession, station_id: int | None = None):
-    """Each connection's most recent daily reading, filtered to ones that are currently not working.
-
-    One row per connection: whichever connection_status_daily row has the max
-    snapshot_date for that connection_id, restricted to is_working = false.
-    """
+    """Get connectors whose latest status is down."""
     latest_dates = select(
         ConnectionStatusDaily.connection_id,
         func.max(ConnectionStatusDaily.snapshot_date).label("latest_date"),
@@ -97,12 +89,7 @@ async def latest_reading_per_connection(db: AsyncSession, station_id: int | None
 
 
 async def current_down_streak(db: AsyncSession, connection_id: int, latest_date: date) -> tuple[date, int]:
-    """Start date and length of the down-streak ending at `latest_date` for one connection.
-
-    Walks backward day by day from `latest_date` through consecutive is_working=false
-    rows. A working=true row or a missing day (gap) stops the walk, so a gap in the
-    daily snapshots breaks the streak rather than being treated as still-down.
-    """
+    """Find when a connector's current down streak started."""
     stmt = (
         select(ConnectionStatusDaily.snapshot_date, ConnectionStatusDaily.is_working)
         .where(

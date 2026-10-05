@@ -117,7 +117,7 @@ class StatusSnapshot(Base):
 
 
 class ConnectionStatusDaily(Base):
-    """One row per connection per day: was it working, plus denormalized fields for fast reporting."""
+    """Daily working/not-working record for a connector."""
 
     __tablename__ = "connection_status_daily"
     __table_args__ = (
