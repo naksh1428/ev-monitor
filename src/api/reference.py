@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.models import Address, StatusType
 from schemas.reference import StatusTypeOut
+from utils.cache import cache_get, cache_set
 from utils.db import get_db
 
 router = APIRouter(tags=["Reference"])
@@ -16,6 +17,10 @@ async def list_towns(
     db: AsyncSession = Depends(get_db),
 ) -> list[str]:
     """List unique towns that have stations, sorted."""
+    cache_key = f"towns:{limit}:{offset}"
+    if (cached := await cache_get(cache_key)) is not None:
+        return cached
+
     stmt = (
         select(Address.town)
         .where(Address.town.is_not(None), Address.town != "")
@@ -25,11 +30,18 @@ async def list_towns(
         .limit(limit)
     )
     result = await db.execute(stmt)
-    return [row[0] for row in result.all()]
+    towns = [row[0] for row in result.all()]
+    await cache_set(cache_key, towns)
+    return towns
 
 
 @router.get("/status-types", response_model=list[StatusTypeOut])
 async def list_status_types(db: AsyncSession = Depends(get_db)) -> list[StatusTypeOut]:
     """List all possible statuses."""
+    if (cached := await cache_get("status-types")) is not None:
+        return cached
+
     result = await db.execute(select(StatusType).order_by(StatusType.id))
-    return result.scalars().all()
+    status_types = [StatusTypeOut.model_validate(s).model_dump() for s in result.scalars().all()]
+    await cache_set("status-types", status_types)
+    return status_types

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from celery_app import app as celery_app
 from models.models import Address, Connection, ConnectionStatusDaily, Station, StatusType
+from utils.cache import clear_cache
 from utils.db import LocalSession
 
 logger = logging.getLogger(__name__)
@@ -60,6 +61,7 @@ def snapshot_connection_status_task() -> int:
     db = LocalSession()
     try:
         count = snapshot_connection_status(db)
+        clear_cache()
         logger.info("connection status snapshot written for %d connections", count)
         return count
     finally:

@@ -18,6 +18,7 @@ from schemas.stations import (
     StationWorkingStatusOut,
 )
 from services.station_ingest import ingest_stations
+from utils.cache import clear_cache
 from utils.config import settings
 from utils.db import LocalSession, get_db
 
@@ -91,7 +92,9 @@ def ingest_stations_task(max_results: int = 1000, offset: int = 0) -> dict:
     db = LocalSession()
     try:
         raw_records = fetch_stations(max_results=max_results, offset=offset)
-        return ingest_stations(db, raw_records).model_dump()
+        summary = ingest_stations(db, raw_records).model_dump()
+        clear_cache()
+        return summary
     finally:
         db.close()
 

@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.models import Address, Connection, Station, StatusType
 from schemas.connections import DownConnectionStreakOut, NotWorkingConnectionOut
 from services.connection_status import current_down_streak, latest_reading_per_connection
+from utils.cache import cache_get, cache_set
 from utils.db import get_db
 
 router = APIRouter(prefix="/connections", tags=["Connections"])
@@ -47,6 +48,10 @@ async def list_down_connections(
     db: AsyncSession = Depends(get_db),
 ) -> list[DownConnectionStreakOut]:
     """List connectors down for more than `min_days` days in a row."""
+    cache_key = f"connections:down:{min_days}"
+    if (cached := await cache_get(cache_key)) is not None:
+        return cached
+
     latest_down = await latest_reading_per_connection(db)
 
     out = []
@@ -64,4 +69,5 @@ async def list_down_connections(
                     days_down=days_down,
                 )
             )
+    await cache_set(cache_key, [item.model_dump(mode="json") for item in out])
     return out

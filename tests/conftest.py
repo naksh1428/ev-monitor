@@ -12,6 +12,7 @@ os.environ.update(
     BASE="https://example.invalid/v3/poi",
     CELERY_BROKER_URL="memory://",
     CELERY_RESULT_BACKEND="cache+memory://",
+    REDIS_URL="",  # disable the response cache
 )
 
 import pytest

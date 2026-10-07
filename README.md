@@ -9,7 +9,7 @@ It pulls station data from [Open Charge Map](https://openchargemap.org), stores 
 - **FastAPI** — REST API
 - **MySQL** + **SQLAlchemy** — database
 - **Alembic** — database migrations
-- **Celery** + **Redis** — background jobs (data ingest, daily status snapshot)
+- **Celery** + **Redis** — background jobs (data ingest, daily status snapshot); Redis also caches read-only API responses (DB 1, 5-min TTL, cleared after each ingest/snapshot)
 - **Docker Compose** — runs everything together
 
 Dependencies are managed with [uv](https://docs.astral.sh/uv/) — the package list is in `pyproject.toml`, exact pinned versions in `uv.lock`. There's no `requirements.txt`.
